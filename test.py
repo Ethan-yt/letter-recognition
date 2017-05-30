@@ -55,7 +55,7 @@ class DataIterator:
     def to_label(self, char):
         result = []
         for i in range(26):
-            if chr(97 + i) == char[0]:
+            if chr(65 + i) == char[0]:
                 flag = 1
             else:
                 flag = 0

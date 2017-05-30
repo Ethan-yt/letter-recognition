@@ -15,7 +15,7 @@ font_number = 10
 class RandomChar():
     @staticmethod
     def rand_letter():
-        return chr(random.randint(97, 122))
+        return chr(random.randint(65, 90))
 
 
 class ImageChar():
@@ -26,7 +26,7 @@ class ImageChar():
         self.size = size
         self.fontPath = []
         for i in range(font_number):
-            self.fontPath.append('./Fonts/{0}.ttf'.format(i))
+            self.fontPath.append('./fonts/{0}.ttf'.format(i))
 
         self.bgColor = bg_color
         self.fontSize = font_size
@@ -66,7 +66,7 @@ if is_random:
         ic.save('./images/test/' + char + '_' + str(fontType) + ".jpeg")
 
 else:
-    for char in (chr(i + 97) for i in range(26)):
+    for char in (chr(i + 65) for i in range(26)):
         for fontType in range(1, font_number):
             ic = ImageChar()
             ic.draw_letter(char, fontType)
