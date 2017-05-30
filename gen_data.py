@@ -2,8 +2,6 @@
 from PIL import Image, ImageDraw, ImageFont
 import random
 
-
-
 '''
 是否随机生成 True 为随机生成，False 为顺序生成
 '''
@@ -11,10 +9,13 @@ is_random = False
 '''
 字体总数
 '''
-font_number = 10
+font_number = 6
+
+
 class RandomChar():
     @staticmethod
     def rand_letter():
+        # return str(random.randint(0, 9))
         return chr(random.randint(65, 90))
 
 
@@ -34,15 +35,15 @@ class ImageChar():
         self.font = []
         for i in range(len(self.fontPath)):
             self.font.append(ImageFont.truetype(self.fontPath[i], self.fontSize))
-        self.image = Image.new('RGB', size, bg_color)
-
-    @staticmethod
-    def rand_rgb():
-        return 0, 0, 0
+        self.image = None
 
     def draw_letter(self, letter, font_index):
+
+        (letterWidth, letterHeight) = self.font[font_index].getsize(letter)
+        self.image = Image.new('RGB', (letterWidth, letterHeight), self.bgColor)
         draw = ImageDraw.Draw(self.image)
-        draw.text((5, 0 ), letter, font=self.font[font_index], fill=self.rand_rgb())
+        draw.text((0, 0), letter, font=self.font[font_index], fill=self.fontColor)
+        self.image = self.image.resize(self.size)
         del draw
 
     def save(self, path):
@@ -67,6 +68,7 @@ if is_random:
 
 else:
     for char in (chr(i + 65) for i in range(26)):
+    # for char in (str(i) for i in range(10)):
         for fontType in range(1, font_number):
             ic = ImageChar()
             ic.draw_letter(char, fontType)
