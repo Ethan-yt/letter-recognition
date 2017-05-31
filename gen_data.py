@@ -49,6 +49,10 @@ class ImageChar():
     def save(self, path):
         self.image.save(path)
 
+    def test(self,font_index):
+        self.image = Image.new('RGB', (28, 28), self.bgColor)
+        draw = ImageDraw.Draw(self.image)
+        draw.text((0, 0), "A", font=self.font[font_index], fill=self.fontColor)
 
 if is_random:
     # 生成训练集

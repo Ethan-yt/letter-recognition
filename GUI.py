@@ -7,24 +7,19 @@ import logging
 import matplotlib
 
 matplotlib.use('TkAgg')
-from ttk import Frame, Button, Style
-from PIL import ImageTk
+
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import threading
 from PIL import Image
-from Tkinter import Tk, Frame, Checkbutton, StringVar
-from Tkinter import BooleanVar, BOTH, LEFT, BOTTOM, N, S, RIGHT, E
+from tkinter import Tk, Frame, Checkbutton, StringVar, Button
+from tkinter import BooleanVar, BOTH, LEFT, BOTTOM, N, S, RIGHT, E
 
 logger = logging.getLogger('Training a chiness write char recognition')
 logger.setLevel(logging.INFO)
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# fh = logging.FileHandler('recogniiton.log')
-# fh.setFormatter(formatter)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
-# logger.addHandler(fh)
 logger.addHandler(ch)
 
 tf.app.flags.DEFINE_integer('image_width', 28,
@@ -76,7 +71,7 @@ class DataIterator:
         # g_arr = np.array(g)
         # b_arr = np.array(b)
 
-        return np.mean([r_arr, g_arr, b_arr], axis=0)
+        return np.mean([r_arr, g_arr, b_arr], axis=0)/255
 
     def next_batch(self, batch_size):
         arr = []
@@ -120,8 +115,9 @@ class App(Frame):
         Button(frame, text="Test", command=self.test).pack(fill=BOTH, padx=5, pady=5)
         Button(frame, text="Quit", command=window.quit).pack(side=BOTTOM, fill=BOTH, padx=5, pady=5)
         self.is_V2 = BooleanVar(value=False)
-        Checkbutton(frame, text="Use 2 layers (Unstable)", variable=self.is_V2, command=self.init_model).pack(fill=BOTH, padx=5,
-                                                                                                   pady=5)
+        Checkbutton(frame, text="Use 2 layers (Unstable)", variable=self.is_V2, command=self.init_model).pack(fill=BOTH,
+                                                                                                              padx=5,
+                                                                                                              pady=5)
         self.stop = True
         self.fig = Figure()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.window)
@@ -240,6 +236,7 @@ class App(Frame):
                 else:
                     self.train_step.run(feed_dict={self.x: batch_xs, self.y_: batch_ys})
 
+
             if self.is_V2.get():
                 train_accuracy = self.accuracy.eval(
                     feed_dict={self.x: batch_xs, self.y_: batch_ys, self.keep_prob: 1.0})
@@ -266,7 +263,7 @@ class App(Frame):
             W = []
             for i in range(3):
                 W.append(self.sess.run(tf.reshape(tf.transpose(self.W)[i], [28, 28])))
-                im = self.subplots[i].imshow(W[i], vmin=-50, vmax=50)
+                im = self.subplots[i].imshow(W[i] ,vmin=-0.3, vmax=0.3)
             self.fig.colorbar(im, cax=self.cbar)
 
         self.canvas.draw()
@@ -290,7 +287,7 @@ class App(Frame):
         image, name = self.test_feeder.select_a_random_image()
         self.test_image.imshow(np.array(image))
         self.canvas.draw()
-        print "Loaded an image: " + name
+        print("Loaded an image: " + name)
         image_array = [self.test_feeder.image_to_array(name)]
 
         if self.is_V2.get():
@@ -307,7 +304,7 @@ class App(Frame):
         for i in range(3):
             string += combine_list[i][0] + ":" + str(combine_list[i][1]) + "\t"
 
-        print "Result: " + string
+        print("Result: " + string)
 
 
 def weight_variable(shape):
