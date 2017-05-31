@@ -81,18 +81,31 @@ class DataIterator:
     def next_batch(self, batch_size):
         arr = []
         for i in range(batch_size):
-            arr.append(i)
-        random.shuffle(arr)
+            arr.append(random.randint(0, len(self.image_names) - 1))
         x = []
         y = []
         for i in range(batch_size):
             y.append(self.labels[i])
             x.append(self.image_to_array(self.image_names[i]))
-
         return x, y
+
+    def all(self):
+        x = []
+        y = []
+        for i in range(len(self.image_names)):
+            y.append(self.labels[i])
+            x.append(self.image_to_array(self.image_names[i]))
+        return x, y
+
+    def select_a_random_image(self):
+        index = random.randint(0, len(self.image_names) - 1)
+        filename = self.image_names[index]
+        return Image.open(filename), filename
 
 
 class App(Frame):
+    sess = None
+
     def __init__(self, window, **kw):
         Frame.__init__(self, window)
         self.window = window
@@ -100,14 +113,16 @@ class App(Frame):
 
         frame = Frame(window)
         frame.pack(side=LEFT, fill=BOTH)
-        Button(frame, text="Train 1 Step", command=lambda: self.train(1)).pack(fill=BOTH, padx=5, pady=5)
+        Button(frame, text="Step Training", command=lambda: self.train(1)).pack(fill=BOTH, padx=5, pady=5)
         self.start_button_name = StringVar(value="Start Training")
         Button(frame, textvariable=self.start_button_name, command=self.start).pack(fill=BOTH, padx=5, pady=5)
-        Button(frame, text="QUIT", command=window.quit).pack(side=BOTTOM, fill=BOTH, padx=5, pady=5)
+        Button(frame, text="Clear & Reset", command=self.init_model).pack(fill=BOTH, padx=5, pady=5)
+        Button(frame, text="Test", command=self.test).pack(fill=BOTH, padx=5, pady=5)
+        Button(frame, text="Quit", command=window.quit).pack(side=BOTTOM, fill=BOTH, padx=5, pady=5)
         self.is_V2 = BooleanVar(value=False)
-        Checkbutton(frame, text="Use 2 layers", variable=self.is_V2, command=self.init_model).pack(fill=BOTH, padx=5,
+        Checkbutton(frame, text="Use 2 layers (Unstable)", variable=self.is_V2, command=self.init_model).pack(fill=BOTH, padx=5,
                                                                                                    pady=5)
-        self.stop = True;
+        self.stop = True
         self.fig = Figure()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         self.canvas.get_tk_widget().pack(side=RIGHT, fill=BOTH, expand=True)
@@ -119,7 +134,8 @@ class App(Frame):
         self.fig.subplots_adjust(right=0.8)
         self.cbar = self.fig.add_axes([0.85, 0.5, 0.05, 0.4])
 
-        self.subplot = self.fig.add_subplot(212)
+        self.subplot = self.fig.add_subplot(223)
+        self.test_image = self.fig.add_subplot(224)
         self.subplot.set_title("Accuracy Diagram", fontsize=16)
         self.subplot.set_ylabel("Accuracy")
         self.subplot.set_xlabel("Step")
@@ -134,15 +150,21 @@ class App(Frame):
         self.train_feeder = DataIterator(data_dir=FLAGS.train_data_dir)
         self.test_feeder = DataIterator(data_dir=FLAGS.test_data_dir)
 
-        self.sess = tf.InteractiveSession()
-
-        self.test_batch_xs, self.test_batch_ys = self.test_feeder.next_batch(26)
+        self.test_batch_xs, self.test_batch_ys = self.test_feeder.all()
 
         self.init_model()
 
     def init_model(self):
+        if self.sess is not None:
+            self.sess.close()
+        self.sess = tf.InteractiveSession()
+
         self.count = 0
         self.subplot.clear()
+        for subplot in self.subplots:
+            subplot.clear()
+
+        self.canvas.draw()
 
         self.plot_x = [0]
         self.plot_y = [0]
@@ -179,14 +201,14 @@ class App(Frame):
             W_fc2 = weight_variable([1024, 26])
             b_fc2 = bias_variable([26])
 
-            y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+            self.y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
             cross_entropy = tf.reduce_mean(
-                tf.nn.softmax_cross_entropy_with_logits(labels=self.y_, logits=y_conv))
+                tf.nn.softmax_cross_entropy_with_logits(labels=self.y_, logits=self.y_conv))
             self.train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
             # test
-            correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(self.y_, 1))
+            correct_prediction = tf.equal(tf.argmax(self.y_conv, 1), tf.argmax(self.y_, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         else:
             # Create the model
@@ -195,15 +217,15 @@ class App(Frame):
 
             self.W = tf.Variable(tf.zeros([28 * 28, 26]))
             b = tf.Variable(tf.zeros([26]))
-            y = tf.matmul(self.x, self.W) + b
+            self.y = tf.matmul(self.x, self.W) + b
 
             cross_entropy = tf.reduce_mean(
-                tf.nn.softmax_cross_entropy_with_logits(labels=self.y_, logits=y))
+                tf.nn.softmax_cross_entropy_with_logits(labels=self.y_, logits=self.y))
             self.train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
             # train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
             # test
-            correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(self.y_, 1))
+            correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.y_, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
         self.sess.run(tf.global_variables_initializer())
@@ -229,7 +251,7 @@ class App(Frame):
                     feed_dict={self.x: self.test_batch_xs, self.y_: self.test_batch_ys})
 
         print(
-            "step %d, training accuracy %g, test accuracy %g" % (
+            "Step %d, training accuracy %g, test accuracy %g" % (
                 self.count, train_accuracy, test_accuracy))
         self.plot_x.append(self.count)
         self.plot_y.append(test_accuracy)
@@ -263,6 +285,29 @@ class App(Frame):
             return
         self.train(5)
         threading.Timer(0, self.work).start()
+
+    def test(self):
+        image, name = self.test_feeder.select_a_random_image()
+        self.test_image.imshow(np.array(image))
+        self.canvas.draw()
+        print "Loaded an image: " + name
+        image_array = [self.test_feeder.image_to_array(name)]
+
+        if self.is_V2.get():
+            results = self.sess.run(self.y_conv, feed_dict={self.x: image_array, self.keep_prob: 1.0})[0]
+        else:
+            results = self.sess.run(self.y, feed_dict={self.x: image_array})[0]
+
+        combine_list = list()
+        for i in range(26):
+            combine_list.append((chr(65 + i), results[i]))
+        combine_list.sort(key=lambda x: x[1], reverse=True)
+
+        string = ""
+        for i in range(3):
+            string += combine_list[i][0] + ":" + str(combine_list[i][1]) + "\t"
+
+        print "Result: " + string
 
 
 def weight_variable(shape):
