@@ -100,7 +100,7 @@ class App(Frame):
 
         frame = Frame(window)
         frame.pack(side=LEFT, fill=BOTH)
-        Button(frame, text="Train 1 Step",  command= lambda: self.train(1)).pack(fill=BOTH, padx=5, pady=5)
+        Button(frame, text="Train 1 Step", command=lambda: self.train(1)).pack(fill=BOTH, padx=5, pady=5)
         self.start_button_name = StringVar(value="Start Training")
         Button(frame, textvariable=self.start_button_name, command=self.start).pack(fill=BOTH, padx=5, pady=5)
         Button(frame, text="QUIT", command=window.quit).pack(side=BOTTOM, fill=BOTH, padx=5, pady=5)
@@ -236,7 +236,7 @@ class App(Frame):
         self.plot()
 
     def plot(self):
-        self.subplot.axis([0, len(self.plot_x) * 2 + 5, 0, 1])
+        self.subplot.axis([0, self.plot_x[-1] + 5, 0, 1])
 
         self.subplot.plot(self.plot_x, self.plot_y, color='blue')
 
