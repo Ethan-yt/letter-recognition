@@ -71,7 +71,7 @@ class DataIterator:
         # g_arr = np.array(g)
         # b_arr = np.array(b)
 
-        return np.mean([r_arr, g_arr, b_arr], axis=0)/255
+        return 1 - np.mean([r_arr, g_arr, b_arr], axis=0) / 255
 
     def next_batch(self, batch_size):
         arr = []
@@ -217,7 +217,7 @@ class App(Frame):
 
             cross_entropy = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(labels=self.y_, logits=self.y))
-            self.train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
+            self.train_step = tf.train.GradientDescentOptimizer(0.1).minimize(cross_entropy)
             # train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
             # test
@@ -235,7 +235,6 @@ class App(Frame):
                     self.train_step.run(feed_dict={self.x: batch_xs, self.y_: batch_ys, self.keep_prob: 0.5})
                 else:
                     self.train_step.run(feed_dict={self.x: batch_xs, self.y_: batch_ys})
-
 
             if self.is_V2.get():
                 train_accuracy = self.accuracy.eval(
@@ -263,7 +262,7 @@ class App(Frame):
             W = []
             for i in range(3):
                 W.append(self.sess.run(tf.reshape(tf.transpose(self.W)[i], [28, 28])))
-                im = self.subplots[i].imshow(W[i] ,vmin=-0.3, vmax=0.3)
+                im = self.subplots[i].imshow(W[i], vmin=-0.15, vmax=0.15)
             self.fig.colorbar(im, cax=self.cbar)
 
         self.canvas.draw()
@@ -291,9 +290,9 @@ class App(Frame):
         image_array = [self.test_feeder.image_to_array(name)]
 
         if self.is_V2.get():
-            results = self.sess.run(self.y_conv, feed_dict={self.x: image_array, self.keep_prob: 1.0})[0]
+            results = self.sess.run(tf.nn.softmax(self.y_conv), feed_dict={self.x: image_array, self.keep_prob: 1.0})[0]
         else:
-            results = self.sess.run(self.y, feed_dict={self.x: image_array})[0]
+            results = self.sess.run(tf.nn.softmax(self.y), feed_dict={self.x: image_array})[0]
 
         combine_list = list()
         for i in range(26):
